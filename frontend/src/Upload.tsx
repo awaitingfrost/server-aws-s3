@@ -1,11 +1,7 @@
 import React, { useState } from 'react';
-import AWS from 'aws-sdk';
-import S3 from 'aws-sdk/clients/s3';
+import { uploadFileToS3 } from './aws-config';
 
 const Upload: React.FC = () => {
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [uploading, setUploading] = useState<boolean>()
-
   const allowedTypes = [
     'image/jpeg',
     'image/png',
@@ -14,61 +10,31 @@ const Upload: React.FC = () => {
     'video/quicktime',
     'audio/mpeg',
     'audio/wav',
-    // Add more supported types as needed
   ];
+  
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  // const [uploading, setUploading] = useState<boolean>(false);
+  const [urlString, setUrlString] = useState<string[]>([]);
+
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-
     const selectedFile = event.target.files[0];
     if (selectedFile && allowedTypes.includes(selectedFile.type)) {
+      setSelectedFiles([...selectedFiles, selectedFile]);
+      const fileUrl = await uploadFileToS3(selectedFile);
 
-      if (selectedFile) {
-        setSelectedFiles([...selectedFiles, selectedFile]);
-
-        setUploading(true)
-        const S3_BUCKET = "your_bucket_name";
-        const REGION = "your_region";
-
-        AWS.config.update({
-          accessKeyId: "your_accesskeyID",
-          secretAccessKey: "your_secretAccessKey",
-        });
-
-        const s3 = new S3({
-          params: { Bucket: S3_BUCKET },
-          region: REGION,
-        });
-
-        const params = {
-          Bucket: S3_BUCKET,
-          Key: selectedFile.name,
-          Body: selectedFile,
-        };
-
-        try {
-          const upload = await s3.putObject(params).promise();
-          console.log(upload);
-          setUploading(false)
-          alert("File uploaded successfully.");
-
-        } catch (error) {
-          console.error(error);
-          setUploading(false)
-          alert("Error uploading file: " + error.message); // Inform user about the error
-        }
+      if (typeof fileUrl == 'string') {
+        setUrlString([...urlString, fileUrl]);
       }
-
     } else {
-      alert('Invalid file type. Only images and PDFs are allowed.');
+      alert('Invalid file type. Only images, PDFs, videos, and audio files are allowed.');
     }
-
-
   };
 
   const handleRemoveFile = (index: number) => {
     setSelectedFiles(selectedFiles.filter((_, i) => i !== index));
+    setUrlString(urlString.filter((_, i) => i !== index));
   };
-
   return (
     <div className="flex flex-col items-center justify-center p-6 bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg">
       <input
@@ -98,6 +64,31 @@ const Upload: React.FC = () => {
               </li>
             ))}
           </ul>
+          {urlString.length > 0 && (
+            <div className="mt-4">
+              <h2 className="text-lg font-medium">Uploaded Files URLs:</h2>
+              <ul className="mt-2">
+                {urlString.map((url, index) => (
+                  <li key={index} className="bg-white p-2 border rounded my-1">
+                    <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+                      {url}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div className='mt-28'>
+          {urlString.length && (
+        <div>
+          <p>Uploaded Image:</p>
+          {urlString.map((each, index) => (
+        <img key={index} src={each} alt='' style={{ maxWidth: '100%', height: 'auto' }} />
+      ))}
+        </div>
+      )}
+          </div>
         </div>
       )}
     </div>
