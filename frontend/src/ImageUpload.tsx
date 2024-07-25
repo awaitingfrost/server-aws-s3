@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { uploadFileToS3 } from './aws-config';
 
-const Upload: React.FC = () => {
+const ImageUpload: React.FC = () => {
   const allowedTypes = [
     'image/jpeg',
     'image/png',
@@ -36,7 +36,7 @@ const Upload: React.FC = () => {
     setUrlString(urlString.filter((_, i) => i !== index));
   };
   return (
-    <div className="flex flex-col items-center justify-center p-6 bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg">
+    <div className="flex flex-col  items-center justify-center p-6 bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg">
       <input
         type="file"
         hidden
@@ -45,8 +45,8 @@ const Upload: React.FC = () => {
         className="hidden"
         id="file-upload"
       />
-      <label htmlFor="file-upload" className="cursor-pointer text-blue-500 hover:underline">
-        Click to upload files
+      <label htmlFor="file-upload" className="font-semibold bg-gray-600 p-8 rounded-2xl  cursor-pointer hover:bg-gray-800">
+        Select Image
       </label>
       {selectedFiles.length > 0 && (
         <div className="mt-4 w-full">
@@ -95,4 +95,4 @@ const Upload: React.FC = () => {
   );
 };
 
-export default Upload;
+export default ImageUpload;

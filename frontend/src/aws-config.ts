@@ -26,7 +26,7 @@ export const uploadFileToS3 = async (file:File) => {
 
   try {
     console.log('starting uploading........')
-    const result = await s3.upload(params).promise();
+    // const result = await s3.upload(params).promise();
     if(result){
       const signedUrl = s3.getSignedUrl('getObject', {
         Bucket: import.meta.env.VITE_AWS_BUCKET_NAME,
