@@ -45,22 +45,31 @@ const VideosUpload = () =>  {
 
       const { data: { url, fields } } = await axios.get(`${import.meta.env.VITE_BASE_URL}/api/s3/presigned-url`,{
         params: {
-          filename: selectedFile?.name,
+          key: key,
           partNumber: i + 1,
           uploadId: uploadId
         }
       });
 
       const formData = new FormData();
-      Object.keys(fields).forEach(key => formData.append(key, fields[key]));
+
+      if (fields) {
+        Object.entries(fields).forEach(([key, value]) => {
+          formData.append(key, value as string);
+        });
+      }
       formData.append('file', chunk);
-
-      const response = await axios.post(url, formData);
-
-      uploadedParts.push({
-        PartNumber: i + 1,
-        ETag: response.headers.etag
-      });
+      try {
+        const response = await axios.post(url, formData);
+        console.log(`Part ${i + 1} uploaded successfully. ETag: ${response.headers.etag}`);
+        uploadedParts.push({
+          PartNumber: i + 1,
+          ETag: response.headers.etag.replace(/"/g, '') 
+        });
+      } catch (error) {
+        console.error(`Failed to upload part ${i + 1}:`, error);
+        throw error; 
+      }
     }
 
     await axios.post(`${import.meta.env.VITE_BASE_URL}/api/complete-upload`, {
@@ -70,7 +79,6 @@ const VideosUpload = () =>  {
     });
 
     console.log('Upload completed successfully');
-
 
   };
   return (

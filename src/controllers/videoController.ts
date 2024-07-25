@@ -27,27 +27,31 @@ export const startMultiPartUpload = async(req:Request,res:Response) => {
 }
 
 export const getPresignedUrl = async(req:Request,res:Response) => {
-  const {filename,partNumber,uploadId} = req.query;
-  const timestamp = Date.now();
-  const key = `uploads/${timestamp}-${filename}`;
+  const {key,partNumber,uploadId} = req.query;
 
   const params = {
     Bucket: process.env.AWS_BUCKET_NAME,
     Key: key,
     Expires: 60 * 60,
     ContentType: 'application/octet-stream',
-    ACL: 'public-read',
     PartNumber: partNumber,
     UploadId: uploadId,
   };
 
-  s3.createPresignedPost(params, (err, data) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).json({ error: 'Failed to generate pre-signed URL' });
-    }
-    res.json(data);
+  const presignedPost = s3.createPresignedPost({
+    Bucket: params.Bucket,
+    Fields: {
+      key: params.Key,
+      partNumber: params.PartNumber,
+      uploadId: params.UploadId,
+    },
+    Conditions: [
+      ['content-length-range', 0, 10 * 1024 * 1024],
+    ],
+    Expires: 3600,
   });
+
+  res.json(presignedPost);
 }
 
 
@@ -59,7 +63,7 @@ export const completeUpload = async (req:Request, res:Response) => {
   }
 
   const params = {
-    Bucket: AWS_BUCKET_NAME!,
+    Bucket: AWS_BUCKET_NAME,
     Key: key,
     UploadId: uploadId,
     MultipartUpload: { Parts: parts }

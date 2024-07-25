@@ -1,7 +1,7 @@
 import express from 'express';
 import uploadFile from './routes/uploadFile'
 import dotenv from 'dotenv';
-const cors = require('cors')
+import cors from 'cors'
 dotenv.config();
 
 const app = express();
