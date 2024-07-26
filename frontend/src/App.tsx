@@ -1,19 +1,19 @@
 
 import ImageUpload from './ImageUpload';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react'
-import VideosUpload from './VideosUpload';
+import FileUpload from './VideosUpload';
 
 function App() {
 
   const categories = [
     {
-      name: 'Photos',
+      name: 'Multi Photos',
       component:<ImageUpload />
 
     },
     {
-      name: 'Videos',
-      component:<VideosUpload/>
+      name: 'Upload File',
+      component:<FileUpload/> 
     },
   ]
   return (
