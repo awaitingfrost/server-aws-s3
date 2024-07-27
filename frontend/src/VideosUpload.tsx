@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import axios from 'axios';
 import { Toaster, toast } from 'react-hot-toast';
 
@@ -16,9 +16,31 @@ const FileUpload = () =>  {
     'audio/mpeg',
     'audio/wav',
   ];
+
+  interface VideoUrlObject {
+    name: string;
+    url: string;
+  }
   
   const [selectedFile, setSelectedFiles] = useState<File>();
   const [isUploading, setIsUploading] = useState(false);
+  const [allVideoList,setVideoList] = useState<VideoUrlObject[]>([]);
+
+  const fetchingAllVideosS3 = async() => {
+    const result = await axios.get(`${import.meta.env.VITE_BASE_URL}/api/list-videos`);
+    if(result){
+        try {
+          const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/api/getvideo-urls`, { ...result});
+          setVideoList(response.data)
+        } catch (error) {
+          console.error('Error fetching presigned URLs:', error);
+          throw error;
+        }
+    }
+  }
+  useEffect(()=> {
+   fetchingAllVideosS3()
+  },[])
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files[0];
@@ -143,10 +165,10 @@ toast.promise(
     error: (message) => `${message}`,
   }
 );
-
 };
 
   return (
+    <div className="">
     <div className="flex flex-col  items-center justify-center p-6 bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg">
      <Toaster position="top-right" />
     <input
@@ -178,6 +200,16 @@ toast.promise(
       <div>
         <p className="text-black text-2xl font-bold rounded-md py-2 mt-4 ">File Name:</p>
         <p className="text-black text-xl font-semibold">{selectedFile?.name}</p>
+       </div>
+     </div>
+     <div className="mt-10 bg-white rounded-xl px-4 py-6">
+         {allVideoList?.map((each, idx) => (
+            <p key={idx} className="my-8">
+              <a href={each.url} className="text-white text-xl font-semibold bg-gray-900 py-3 px-2 rounded-md" target="_blank" rel="noopener noreferrer">
+                {each.name}
+              </a>
+            </p>
+          ))}
        </div>
      </div>
   )

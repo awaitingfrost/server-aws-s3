@@ -1,10 +1,15 @@
 import { Request,Response } from "express"
 import express from 'express';
 const router = express.Router();
-import { s3 } from "../aws-config";
+import { s3, s3Client } from "../aws-config";
+import { listVideosInFolder } from "./helper";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import path from "path";
 
 const AWS_BUCKET_NAME = 'file-upload-test-server';
 
+/**************************************************************************************************/ 
 
 export const generateSinglePresignedURL = async(req:Request,res:Response)=>{
 try{
@@ -31,6 +36,8 @@ try{
 
 }
 
+/**************************************************************************************************/ 
+
 export const startMultiPartUpload = async(req:Request,res:Response) => {
   const { filename,fileType } = req.body;
   const key = `MULTI-UPLOAD/file-${filename}`;
@@ -50,7 +57,9 @@ export const startMultiPartUpload = async(req:Request,res:Response) => {
   }
 }
 
-export const getPresignedUrl = async(req:Request,res:Response) => {
+/**************************************************************************************************/ 
+
+export const getPresignedUrls = async(req:Request,res:Response) => {
   const {key,partNumber,uploadId} = req.query;
   const params = {
     Bucket: process.env.AWS_BUCKET_NAME,
@@ -63,6 +72,8 @@ export const getPresignedUrl = async(req:Request,res:Response) => {
   const presignedUrl = s3.getSignedUrl('uploadPart',{...params})
   res.status(200).json(presignedUrl);
 }
+
+/**************************************************************************************************/ 
 
 interface UploadPart {
   PartNumber: number;
@@ -98,8 +109,10 @@ export const completeUpload = async (req:Request, res:Response) => {
 
 } catch (error) {
   res.send('Error completing multipart upload:');
-}
-}
+}}
+
+/**************************************************************************************************/ 
+
 
 export const generateMultipleImagesUrl = async(req:Request,res:Response) => {
   const { filename,filetype } = req.query;
@@ -119,5 +132,73 @@ export const generateMultipleImagesUrl = async(req:Request,res:Response) => {
   }
 }
 
+/**************************************************************************************************/ 
 
+type VideoList = {
+  [key: string]: string[];
+};
+
+export const getVideoList = async (req: Request, res: Response) => {
+  const folders = [
+    'MULTIPLE-IMAGES/',
+    'SINGLE-UPLOAD/'
+  ];
+
+  try {
+    let allVideos: VideoList = {};
+    
+    for (const folder of folders) {
+      const videos = await listVideosInFolder({
+          bucketName: AWS_BUCKET_NAME,
+          folderName: folder
+      });
+     
+      allVideos[folder] = videos?.filter((video): video is string => video !== undefined) ?? [];
+    }
+    res.json(allVideos);
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: 'An error occurred while listing videos' });
+  }
+}
+
+/**************************************************************************************************/ 
+interface FileData {
+  "MULTIPLE-IMAGES/": string[];
+  "SINGLE-UPLOAD/": string[];
+}
+
+interface VideoUrlObject {
+  name: string;
+  url: string;
+}
+
+export const getVideoUrls = async (req: Request, res: Response) => {
+  const data: FileData = req.body.data; 
+  const results: VideoUrlObject[] = []; 
+
+  try {
+    for (const files of Object.values(data)) {
+      for (const file of files) {
+        const command = new GetObjectCommand({
+          Bucket: process.env.AWS_BUCKET_NAME,
+          Key: file,
+        });
+
+        const presignedUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+        const fileName = path.basename(file);
+
+        results.push({
+          name: fileName,
+          url: presignedUrl
+        });
+      }
+    }
+
+    res.status(200).json(results);
+  } catch (error) {
+    console.error('Error generating pre-signed URLs:', error);
+    res.status(500).json({ error: 'An error occurred while generating the video URLs' });
+  }
+};
 export default router;
