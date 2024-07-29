@@ -17,30 +17,9 @@ const FileUpload = () =>  {
     'audio/wav',
   ];
 
-  interface VideoUrlObject {
-    name: string;
-    url: string;
-  }
-  
   const [selectedFile, setSelectedFiles] = useState<File>();
   const [isUploading, setIsUploading] = useState(false);
-  const [allVideoList,setVideoList] = useState<VideoUrlObject[]>([]);
 
-  const fetchingAllVideosS3 = async() => {
-    const result = await axios.get(`${import.meta.env.VITE_BASE_URL}/api/list-videos`);
-    if(result){
-        try {
-          const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/api/getvideo-urls`, { ...result});
-          setVideoList(response.data)
-        } catch (error) {
-          console.error('Error fetching presigned URLs:', error);
-          throw error;
-        }
-    }
-  }
-  useEffect(()=> {
-   fetchingAllVideosS3()
-  },[])
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files[0];
@@ -202,15 +181,6 @@ toast.promise(
         <p className="text-black text-xl font-semibold">{selectedFile?.name}</p>
        </div>
      </div>
-     <div className="mt-10 bg-white rounded-xl px-4 py-6">
-         {allVideoList?.map((each, idx) => (
-            <p key={idx} className="my-8">
-              <a href={each.url} className="text-white text-xl font-semibold bg-gray-900 py-3 px-2 rounded-md" target="_blank" rel="noopener noreferrer">
-                {each.name}
-              </a>
-            </p>
-          ))}
-       </div>
      </div>
   )
 }
