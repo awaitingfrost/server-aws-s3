@@ -2,6 +2,7 @@
 import ImageUpload from './ImageUpload';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react'
 import FileUpload from './VideosUpload';
+import VideoPlayer from './VideoPlayer';
 
 function App() {
 
@@ -15,6 +16,10 @@ function App() {
       name: 'Upload File',
       component:<FileUpload/> 
     },
+    {
+      name:'Video Player',
+      component:<VideoPlayer />
+    }
   ]
   return (
     <div className='bg-black text-white py-28 px-20'>
